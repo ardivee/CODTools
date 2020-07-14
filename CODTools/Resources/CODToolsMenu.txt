@@ -1,0 +1,189 @@
+// CODTools Menu
+
+global proc exportXModel()
+{
+    string $singleFilter = "CoD XMODEL_EXPORT (*.XMODEL_EXPORT);;CoD XMODEL_BIN (*.XMODEL_BIN)";
+    string $result[] = `fileDialog2 -fileFilter $singleFilter -dialogStyle 2`;
+    if (size($result) > 0)
+    {
+        if (endsWith($result[0], ".XMODEL_EXPORT"))
+		{
+			file -force -options "" -type "CoD XMODEL_EXPORT" -pr -ea $result[0];
+		}
+		else
+		{
+			file -force -options "" -type "CoD XMODEL_BIN" -pr -ea $result[0];
+		}
+    }
+}
+
+global proc exportXAnim()
+{
+    string $singleFilter = "CoD XANIM_EXPORT (*.XANIM_EXPORT);;CoD XANIM_BIN (*.XANIM_BIN)";
+    string $result[] = `fileDialog2 -fileFilter $singleFilter -dialogStyle 2`;
+    if (size($result) > 0)
+    {
+		if (endsWith($result[0], ".XANIM_EXPORT"))
+		{
+			file -force -options "" -type "CoD XANIM_EXPORT" -pr -ea $result[0];
+		}
+		else
+		{
+			file -force -options "" -type "CoD XANIM_BIN" -pr -ea $result[0];
+		}
+    }
+}
+
+global proc exportXCam()
+{
+    string $singleFilter = "CoD XCAM_EXPORT (*.XCAM_EXPORT)";
+    string $result[] = `fileDialog2 -fileFilter $singleFilter -dialogStyle 2`;
+    if (size($result) > 0)
+    {
+		file -force -options "" -type "CoD XCAM_EXPORT" -pr -ea $result[0];
+    }
+}
+
+global proc createCamera()
+{
+	camera -centerOfInterest 5 -focalLength 35 -lensSqueezeRatio 1 -cameraScale 1 -horizontalFilmAperture 0.976 -horizontalFilmOffset 0 -verticalFilmAperture 0.551 -verticalFilmOffset 0 -filmFit Fill -overscan 1 -motionBlur 0 -shutterAngle 144 -nearClipPlane 0.0 -farClipPlane 10000 -orthographic 0 -orthographicWidth 30 -panZoomEnabled 0 -horizontalPan 0 -verticalPan 0 -zoom 1; objectMoveCommand; cameraMakeNode 1 "";
+	string $cameras[] = `ls -sl`;
+	setAttr ($cameras[0] + ".rotateX") 90;
+	setAttr ($cameras[0] + ".depthOfField") 1;
+	setAttr ($cameras[0] + ".focusDistance") 200;
+	setAttr ($cameras[0] + ".fStop") 15;
+	setAttr ($cameras[0] + ".displayResolution") 1;
+	setAttr ($cameras[0] + ".displayGateMask") 1;
+}
+
+global proc codToolsAbout()
+{
+    confirmDialog -title "About CODTools" -message "A simple and powerful exporter for Call of Duty assets.\n\n- Developed by DTZxPorter\n- Updated by Ardivee\n- Version 1.0.1" -button "OK";
+}
+
+global proc int xanimExportOptions(string $parent, string $action, string $settings, string $callback )
+{
+	global string $grab_notes;
+	global string $export_tag_align;
+
+	if ($action == "post")
+	{
+		setParent $parent;
+		$grab_notes = `checkBox
+			-l "Grab Existing SENotes"
+			-align "left"
+			-v true
+			-w 150`;
+			
+		$export_tag_align = `checkBox
+		-l "Export TAG_ALIGN"
+		-align "left"
+		-v false
+		-w 150`;
+
+		string $options[];
+		int $ntokens = `tokenize $settings ";" $options`;
+		for ($i = 0; $i < $ntokens; $i++)
+		{
+			string $option[];
+			int $nparts = `tokenize $options[$i] "=" $option`;
+			if ($nparts < 2)
+				continue;
+
+			if ($option[0] == "grabnotes")
+			{
+				if ($option[1] == "0")
+					checkBox -e -v 0 $grab_notes;
+			}
+
+			if ($option[0] == "exportTagAlign")
+			{
+				if ($option[1] == "1")
+					checkBox -e -v 1 $export_tag_align;
+			}
+		}
+	}
+	else if ($action == "query")
+	{
+		string $option = "grabnotes=";
+
+		if (`checkBox -query -value $grab_notes` == 1)
+			$option += "1;";
+		else
+			$option += "0;";
+
+
+		$option += "exportTagAlign=";
+
+		if (`checkBox -query -value $export_tag_align` == 1)
+			$option += "1;";
+		else
+			$option += "0;";
+
+		
+
+		eval ($callback + " \"" + $option + "\"");
+	}
+
+	return 1;
+}
+
+global proc int xmodelExportOptions(string $parent, string $action, string $settings, string $callback )
+{
+	global string $export_siege;
+
+	if ($action == "post")
+	{
+		setParent $parent;
+		$export_siege = `checkBox
+			-l "Export Siege Model"
+			-align "left"
+			-v false
+			-w 150`;		
+
+		string $options[];
+		int $ntokens = `tokenize $settings ";" $options`;
+		for ($i = 0; $i < $ntokens; $i++)
+		{
+			string $option[];
+			int $nparts = `tokenize $options[$i] "=" $option`;
+			if ($nparts < 2)
+				continue;
+
+			if ($option[0] == "exportsiege")
+			{
+				if ($option[1] == "1")
+					checkBox -e -v 1 $export_siege;
+			}
+		}
+	}
+	else if ($action == "query")
+	{
+		string $option = "exportsiege=";
+
+		if (`checkBox -query -value $export_siege` == 1)
+			$option += "1;";
+		else
+			$option += "0;";
+
+		eval ($callback + " \"" + $option + "\"");
+	}
+
+	return 1;
+}
+
+setParent $gMainWindow;
+menu -label "COD Tools" -tearOff true "CODTools";
+menuItem -label "Export XAnim" -command "exportXAnim";
+menuItem -label "Export XModel" -command "exportXModel";
+menuItem -label "Export XCam" -command "exportXCam";
+menuItem -subMenu true -label "Cinematic";
+menuItem -label "Create Camera" -command "createCamera";
+setParent -menu ..;
+menuItem -subMenu true -label "Cosmetics";
+menuItem -label "Mark" -command "CODMarkCosmetic";
+menuItem -label "Unmark" -command "CODUnMarkCosmetic";
+menuItem -label "Clear" -command "CODClearMarkedCosmetics";
+setParent -menu ..;
+menuItem -divider true;
+menuItem -label "About" -command "codToolsAbout";
